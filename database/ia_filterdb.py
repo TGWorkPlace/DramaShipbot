@@ -176,9 +176,17 @@ def get_compiled_regex(query: str):
             # Single word: allow word/punctuation boundaries
             return r'(\b|[\.\+\-_])' + re.escape(q) + r'(\b|[\.\+\-_])'
         else:
-            # Multi-word: allow flexible separators between words
+            # Multi-word: allow ANY characters between words (episode tags,
+            # quality tags, release-group names, etc. commonly sit between
+            # the words of a title, e.g. "Soldier E04 1080p"). Previously
+            # this only allowed a fixed whitelist of separator characters
+            # ([\s\.\+\-_()]*), which meant any real text between two
+            # query words (like "E04") caused the whole match to fail.
+            # Using a lazy "any characters" separator with word boundaries
+            # around each part keeps word order significant while no
+            # longer requiring the words to be strictly adjacent.
             parts = q.split()
-            return r'[\s\.\+\-_()]*'.join(re.escape(p) for p in parts)
+            return r'\b' + r'\b.*?\b'.join(re.escape(p) for p in parts) + r'\b'
 
     try:
         if normalized.lower() == query.lower():
